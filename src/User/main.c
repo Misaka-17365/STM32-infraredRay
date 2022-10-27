@@ -1,5 +1,8 @@
 #include "stm32f10x.h"
 #include "OLED.h"
+#include "Delay.h"
+
+
 
 struct{
     uint8_t X;
@@ -7,14 +10,34 @@ struct{
 }item[4];
 uint8_t i, j;
 
-uint8_t menu = 2, item_number = 4;
+uint8_t menu = 1,key_pre = 0, item_number = 1;
 
 uint8_t stage[5][40];
+
+void key()
+{
+	int i;
+	i = GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_12);
+		if(i != key_pre){
+			key_pre = i;
+			Delay_ms(20);
+			if(key_pre == 0){
+				//menu ^= 1;
+				
+				if(item[0].Y*40 > item[0].X * item[0].X)
+				item[0].X++;
+				else item[0].Y++;
+			}
+			
+		}
+}
 
 int main()
 {
     GPIO_InitTypeDef GPIO_InitStructure;
+	
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -24,16 +47,20 @@ int main()
 
     GPIO_SetBits(GPIOA, GPIO_Pin_9);
     GPIO_ResetBits(GPIOA, GPIO_Pin_10);
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-    OLED_Init();
-
+	OLED_Init();
 	item[0].X = 1;
 	item[0].Y = 1;
 	
     while(1){
 
 
-        if(menu == 1){
+        if(menu == 0){
 			OLED_Clear();
             OLED_ShowString(1, 1, "POSITIONING");
             for(i = 0; i < item_number; i++){
@@ -44,8 +71,8 @@ int main()
                 OLED_ShowChar(3+i, 1+11*6, ')');
 
             }
-            while(menu == 1){
-				
+            while(menu == 0){
+				key();
 				for(i = 0; i < item_number; i++){
                 OLED_ShowChar(3+i, 1+1*6, '1'+i);
                 OLED_ShowChar(3+i, 1+6*6, '0'+item[i].X / 10);
@@ -57,7 +84,7 @@ int main()
             }
         }
 
-        if(menu == 2){
+        if(menu == 1){
 			OLED_Clear();
 			OLED_ShowString(1, 1, "TRACING");
 			
@@ -89,8 +116,9 @@ int main()
 			OLED_ShowChar(2, 7, 'O');
 
 
-            while(menu == 2){
-				stage[(item[0].Y - 1) / 8][item[0].X - 1] = 0x01 << ((item[0].Y - 1) % 8);
+            while(menu == 1){
+				key();
+				stage[(item[0].Y - 1) / 8][item[0].X - 1] |= 0x01 << ((item[0].Y - 1) % 8);
 				
 				for(i = 0; i < 5; i++){
 					for(j = 0; j < 40; j++){
@@ -99,8 +127,6 @@ int main()
 				}
             }
         }
-
-
     }
-
 }
+

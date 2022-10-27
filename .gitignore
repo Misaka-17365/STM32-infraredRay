@@ -1,0 +1,7 @@
+/src/*
+
+!/src/Lib/
+!/src/StartUp/
+!/src/User/
+!/src/prject.uvprojx
+!/src/prject.uvoptx
